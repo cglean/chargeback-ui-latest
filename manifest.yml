@@ -6,7 +6,7 @@ applications:
   host: chargeback-ui
   path: target/chargeback-ui-0.0.1-SNAPSHOT.jar
   services:
-    - service-registry
+    - eureka-cb
   env:
     SPRING_PROFILES_ACTIVE: cloud
-    CF_TARGET: https://api.cglean.com
+    CF_TARGET: https://api.run.pivotal.io

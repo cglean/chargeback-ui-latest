@@ -1,4 +1,4 @@
-package com.chargeback.rest.client;
+/*package com.chargeback.rest.client;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,3 +13,4 @@ public interface InfraApiClient {
 	@RequestMapping(value = "/cost", method = RequestMethod.GET)
 	public CostVO getCost(@RequestParam("start") String start, @RequestParam("end") String end);
 }
+*/

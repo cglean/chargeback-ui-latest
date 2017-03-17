@@ -34,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.chargeback.rest.client.ChargeBackApiClient;
-import com.chargeback.rest.client.InfraApiClient;
 import com.chargeback.vo.ChartVO;
 import com.chargeback.vo.CostVO;
 import com.chargeback.vo.PriceValueSummary;
@@ -52,9 +51,9 @@ public class ChargeBackController {
 
 	private Log log = LogFactory.getLog(ChargeBackController.class);
 
-	@Autowired
+	/*@Autowired
 	private InfraApiClient infraApiClient;
-
+*/
 	@Autowired
 	private ChargeBackApiClient chargeBackApiClient;
 	
@@ -71,7 +70,21 @@ public class ChargeBackController {
 
 	private List<PriceValueSummary> getSummary(final String startDate, final String endDate) throws ParseException {
 		log.info(String.format("GetSummary %s, %s", startDate, endDate));
-		final CostVO costVO = infraApiClient.getCost(startDate, endDate);
+		
+		// HardCoding To be Removed 
+		final CostVO costVO = new CostVO();
+		
+		final String cpu = String.valueOf(Math.random()* 100);
+		final String disk = String.valueOf(Math.random()* 100);
+		final String memory =  String.valueOf(Math.random()* 100);
+		final Double total = Double.valueOf(cpu) +  Double.valueOf(disk) +  Double.valueOf(memory) ;
+		costVO.setCpu("$" +cpu);
+		costVO.setDisk("$" + disk);
+		costVO.setMemory("$" + memory);
+		costVO.setStartDate(startDate);
+		costVO.setEndDate(endDate);
+		costVO.setTotal("$"+String.valueOf(total));
+		//final CostVO costVO = infraApiClient.getCost(startDate, endDate);
 		final List<String> orgList = chargeBackApiClient.getOrgList();
 
 		final List<PriceValueSummary> priceValueSummaryList = new ArrayList<>();

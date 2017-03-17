@@ -459,9 +459,9 @@ var getClientName = function(){
 		success : function(data) {
 			console.log("Client Name::" + data);
 			if(data=='Kroger'){
-				document.getElementById("clientImg").src="Kroger.png";
+				document.getElementById("clientImg").src="1px.png";
 			}else{
-				document.getElementById("clientImg").src="NBCU.jpg";
+				document.getElementById("clientImg").src="1px.png";
 			}
 		}
 	});
