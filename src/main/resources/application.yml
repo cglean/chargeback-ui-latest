@@ -5,15 +5,7 @@ security:
   basic:
     enabled: false
 server:
-  port: ${PORT:${SERVER_PORT:8080}} 
-
-hystrix:
-  command:
-    default:
-      execution:
-        timeout:
-          enabled: false
-
+  port: ${PORT:${SERVER_PORT:8086}} 
 
 management:
   security:
@@ -33,5 +25,4 @@ hystrix:
     default:
       execution:
         timeout:
-          enabled: false      
-          
+          enabled: false          
