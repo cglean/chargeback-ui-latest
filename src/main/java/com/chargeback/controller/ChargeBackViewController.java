@@ -20,8 +20,6 @@ public class ChargeBackViewController {
 	@RequestMapping("/")
 	public String viewUsageDetails() {
 		log.info("Returning charge.html");
-		// TODO:: Add suffix in application.properties file so that .html need not be added 
-	    // Move the constants to Constant file 
 		return "charge.html";
 	}
 }

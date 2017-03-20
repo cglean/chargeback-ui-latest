@@ -3,21 +3,15 @@ package com.chargeback.vo;
 public class UsageRecord {
 
 	private String cpu;
-	
 	private String memory;
-	
 	private String disk;
-
 	private String orgName;
-	
 	private String appname;
-	
 	private String spaceName;
-	
 	private String summary;
-	
 	private String instanceIndex;
 
+		
 	public String getCpu() {
 		return cpu;
 	}

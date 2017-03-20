@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -88,17 +89,43 @@ public class ChargeBackController {
 		final List<String> orgList = chargeBackApiClient.getOrgList();
 
 		final List<PriceValueSummary> priceValueSummaryList = new ArrayList<>();
-		final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
+		//final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
+        /*Code Changes for database related code*/
+		final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		
+		 double pctDiskUsed;
+		 double pctCpuUsed;
+		 double pctMemoryUsed;
+		 final NumberFormat format = NumberFormat.getCurrencyInstance();
+		for(final String orgName:orgList){
+			pctCpuUsed  = chargeBackApiClient.getUsageDataBetweenDates
+			(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+			.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToDouble(usage -> usage.getCpu()).average().getAsDouble();
+			
+			 pctDiskUsed = chargeBackApiClient.getUsageDataBetweenDates
+					(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
+			
+			  pctMemoryUsed = chargeBackApiClient.getUsageDataBetweenDates
+					(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
+			  
+				final double amtForCPU = (format.parse(costVO.getCpu()).doubleValue()) * pctCpuUsed;
+				final double amtForMemory = (format.parse(costVO.getMemory()).doubleValue()) * pctMemoryUsed;
+				final double amtForDisk = (format.parse(costVO.getDisk()).doubleValue()) * pctDiskUsed;
 
-		final NumberFormat format = NumberFormat.getCurrencyInstance();
-
-		final double allOrgsCpuSum = instanceData.stream()
+				priceValueSummaryList.add(new PriceValueSummary(amtForDisk + amtForCPU + amtForMemory, amtForCPU,
+						amtForDisk, amtForMemory, orgName));
+			
+		}
+		/*Code Changes for database related Code Ends*/
+		/*final double allOrgsCpuSum = instanceData.stream()
 				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getCpu())).sum();
 		final double allOrgsDiskSum = instanceData.stream()
 				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getDisk())).sum();
 		final double allOrgMemorySum = instanceData.stream()
-				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getMemory())).sum();
-		for (final String orgName : orgList) {
+				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getMemory())).sum();*/
+	/*	for (final String orgName : orgList) {
 			// Sum up for Memory
 			final double orgMemorySum = instanceData.stream()
 					.filter(usageRecord -> usageRecord.getOrgName().equals(orgName))
@@ -119,7 +146,7 @@ public class ChargeBackController {
 			final double amtForDisk = (format.parse(costVO.getDisk()).doubleValue()) * pctDiskUsed;
 			priceValueSummaryList.add(new PriceValueSummary(amtForDisk + amtForCPU + amtForMemory, amtForCPU,
 					amtForDisk, amtForMemory, orgName));
-		}
+		}*/
 		return priceValueSummaryList;
 	}
 
@@ -244,7 +271,8 @@ public class ChargeBackController {
 			@PathVariable final String orgName, @PathVariable final String space) {
 		log.info(String.format("getResourceDetails %s, %s, %s, %s", usageType, resourceType, orgName, space));
 		final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
-		Function<List<UsageRecord>, List<String>> usedResourceFunction = null;
+		
+			Function<List<UsageRecord>, List<String>> usedResourceFunction = null;
 		Function<List<UsageRecord>, List<String>> appLabelFunction = null;
 		if (resourceType.equals(MEMORY)) {
 			usedResourceFunction = usedMemory -> instanceData.stream()

@@ -1,13 +1,17 @@
 package com.chargeback.rest.client;
 
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import com.chargeback.vo.Usage;
 import com.chargeback.vo.UsageRecord;
 
 @FeignClient(name= "CHARGEBACK-API", url="http://localhost:8081")
@@ -24,4 +28,10 @@ public interface ChargeBackApiClient {
 
 	@RequestMapping(value = "/metrics/getSpaceList/{orgName}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<String> getSpaceList(@PathVariable("orgName") final String orgName);
+	
+	
+	@RequestMapping(value = "/metrics/getHistorical/{fromDate}/{toDate}/{orgName:.+}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public Map<String, List<Usage>> getUsageDataBetweenDates(
+			@PathVariable("fromDate") @DateTimeFormat(pattern = "yyyy-MM-dd") final Date fromDate,
+			@PathVariable("toDate") @DateTimeFormat(pattern = "yyyy-MM-dd") final Date toDate, @PathVariable("orgName") final String orgName);
 }
