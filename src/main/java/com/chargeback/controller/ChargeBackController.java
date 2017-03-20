@@ -18,6 +18,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,7 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.chargeback.rest.client.ChargeBackApiClient;
 import com.chargeback.vo.ChartVO;
 import com.chargeback.vo.CostVO;
+import com.chargeback.vo.OrgVO;
 import com.chargeback.vo.PriceValueSummary;
+import com.chargeback.vo.Usage;
 import com.chargeback.vo.UsageRecord;
 
 /**
@@ -69,12 +72,10 @@ public class ChargeBackController {
 
 	}
 
-	private List<PriceValueSummary> getSummary(final String startDate, final String endDate) throws ParseException {
+	private List<PriceValueSummary> getSummary(String startDate, String endDate) throws ParseException {
 		log.info(String.format("GetSummary %s, %s", startDate, endDate));
-		
 		// HardCoding To be Removed 
 		final CostVO costVO = new CostVO();
-		
 		final String cpu = String.valueOf(Math.random()* 100);
 		final String disk = String.valueOf(Math.random()* 100);
 		final String memory =  String.valueOf(Math.random()* 100);
@@ -87,66 +88,44 @@ public class ChargeBackController {
 		costVO.setTotal("$"+String.valueOf(total));
 		//final CostVO costVO = infraApiClient.getCost(startDate, endDate);
 		final List<String> orgList = chargeBackApiClient.getOrgList();
-
 		final List<PriceValueSummary> priceValueSummaryList = new ArrayList<>();
-		//final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
         /*Code Changes for database related code*/
-	
-		
-		 double pctDiskUsed;
-		 double pctCpuUsed;
-		 double pctMemoryUsed;
 		 final NumberFormat format = NumberFormat.getCurrencyInstance();
+		 final List<OrgVO> orgVOList =new ArrayList<>();
 		for(final String orgName:orgList){
-			pctCpuUsed  = chargeBackApiClient.getUsageDataBetweenDates
-			(startDate, endDate, orgName).values().stream()
-			.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToDouble(usage -> usage.getCpu()).average().getAsDouble();
-			
-			 pctDiskUsed = chargeBackApiClient.getUsageDataBetweenDates
-					(startDate, endDate, orgName).values().stream()
-					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
-			
-			  pctMemoryUsed = chargeBackApiClient.getUsageDataBetweenDates
-					(startDate, endDate, orgName).values().stream()
-					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
-			  
-				final double amtForCPU = (format.parse(costVO.getCpu()).doubleValue()) * pctCpuUsed;
-				final double amtForMemory = (format.parse(costVO.getMemory()).doubleValue()) * pctMemoryUsed;
-				final double amtForDisk = (format.parse(costVO.getDisk()).doubleValue()) * pctDiskUsed;
-
-				priceValueSummaryList.add(new PriceValueSummary(amtForDisk + amtForCPU + amtForMemory, amtForCPU,
-						amtForDisk, amtForMemory, orgName));
+			Collection<List<Usage>> orgBasedUsageList = chargeBackApiClient.getUsageDataBetweenDates(startDate, endDate, orgName).values();
+			if(!orgBasedUsageList.isEmpty()){
+			final double orgCPUUsed  = orgBasedUsageList.stream()
+			.flatMap(usageList -> usageList.stream()).mapToDouble(usage -> usage.getCpu()).average().getAsDouble();
+		    final double orgDiskUsed = orgBasedUsageList.stream()
+					.flatMap(usageList -> usageList.stream()).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
+		    final double orgMemoryUsed = orgBasedUsageList.stream()
+					.flatMap(usageList -> usageList.stream()).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
+		    final OrgVO  orgVO= new OrgVO();
+		    orgVO.setOrgCpu(orgCPUUsed);
+		    orgVO.setOrgDisk(orgDiskUsed);
+		    orgVO.setOrgMem(orgMemoryUsed);
+		    orgVO.setOrgName(orgName);
+		    orgVOList.add(orgVO);
+		   
+			}  
 			
 		}
-		/*Code Changes for database related Code Ends*/
-		/*final double allOrgsCpuSum = instanceData.stream()
-				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getCpu())).sum();
-		final double allOrgsDiskSum = instanceData.stream()
-				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getDisk())).sum();
-		final double allOrgMemorySum = instanceData.stream()
-				.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getMemory())).sum();*/
-	/*	for (final String orgName : orgList) {
-			// Sum up for Memory
-			final double orgMemorySum = instanceData.stream()
-					.filter(usageRecord -> usageRecord.getOrgName().equals(orgName))
-					.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getMemory())).sum();
-			final double pctMemoryUsed = (Double.valueOf(orgMemorySum) / Double.valueOf(allOrgMemorySum));
-			final double amtForMemory = (format.parse(costVO.getMemory()).doubleValue()) * pctMemoryUsed;
-			// Sum up for CPU
-			final double orgCpuSum = instanceData.stream()
-					.filter(usageRecord -> usageRecord.getOrgName().equals(orgName))
-					.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getCpu())).sum();
-			final double pctCpuUsed = (Double.valueOf(orgCpuSum) / Double.valueOf(allOrgsCpuSum));
+		final double allOrgsCpuSum= orgVOList.stream().mapToDouble(orgvo -> orgvo.getOrgCpu()).sum();
+		final double allOrgsDiskSum= orgVOList.stream().mapToDouble(orgvo -> orgvo.getOrgDisk()).sum();
+		final double allOrgsMemSum= orgVOList.stream().mapToDouble(orgvo -> orgvo.getOrgMem()).sum();
+		for(final OrgVO orgvo : orgVOList){
+			final double pctMemoryUsed = (Double.valueOf(orgvo.getOrgMem()) / Double.valueOf(allOrgsMemSum));
+			final double pctCpuUsed = (Double.valueOf(orgvo.getOrgCpu()) / Double.valueOf(allOrgsCpuSum));
+			final double pctDiskUsed = (Double.valueOf(orgvo.getOrgDisk()) / Double.valueOf(allOrgsDiskSum));
 			final double amtForCPU = (format.parse(costVO.getCpu()).doubleValue()) * pctCpuUsed;
-			// SUM for DISK
-			final double orgDiskSum = instanceData.stream()
-					.filter(usageRecord -> usageRecord.getOrgName().equals(orgName))
-					.mapToDouble(usageRecord -> Double.valueOf(usageRecord.getDisk())).sum();
-			final double pctDiskUsed = (Double.valueOf(orgDiskSum) / Double.valueOf(allOrgsDiskSum));
+			final double amtForMemory = (format.parse(costVO.getMemory()).doubleValue()) * pctMemoryUsed;
 			final double amtForDisk = (format.parse(costVO.getDisk()).doubleValue()) * pctDiskUsed;
-			priceValueSummaryList.add(new PriceValueSummary(amtForDisk + amtForCPU + amtForMemory, amtForCPU,
-					amtForDisk, amtForMemory, orgName));
-		}*/
+
+				priceValueSummaryList.add(new PriceValueSummary(amtForDisk + amtForCPU + amtForMemory, amtForCPU,
+						amtForDisk, amtForMemory, orgvo.getOrgName()));
+
+		}
 		return priceValueSummaryList;
 	}
 
@@ -272,7 +251,7 @@ public class ChargeBackController {
 		log.info(String.format("getResourceDetails %s, %s, %s, %s", usageType, resourceType, orgName, space));
 		final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
 		
-			Function<List<UsageRecord>, List<String>> usedResourceFunction = null;
+		Function<List<UsageRecord>, List<String>> usedResourceFunction = null;
 		Function<List<UsageRecord>, List<String>> appLabelFunction = null;
 		if (resourceType.equals(MEMORY)) {
 			usedResourceFunction = usedMemory -> instanceData.stream()
