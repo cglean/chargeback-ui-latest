@@ -91,7 +91,7 @@ public class ChargeBackController {
 		final List<PriceValueSummary> priceValueSummaryList = new ArrayList<>();
 		//final List<UsageRecord> instanceData = chargeBackApiClient.getAllApplicationInstanceData();
         /*Code Changes for database related code*/
-		final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	
 		
 		 double pctDiskUsed;
 		 double pctCpuUsed;
@@ -99,15 +99,15 @@ public class ChargeBackController {
 		 final NumberFormat format = NumberFormat.getCurrencyInstance();
 		for(final String orgName:orgList){
 			pctCpuUsed  = chargeBackApiClient.getUsageDataBetweenDates
-			(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+			(startDate, endDate, orgName).values().stream()
 			.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToDouble(usage -> usage.getCpu()).average().getAsDouble();
 			
 			 pctDiskUsed = chargeBackApiClient.getUsageDataBetweenDates
-					(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+					(startDate, endDate, orgName).values().stream()
 					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
 			
 			  pctMemoryUsed = chargeBackApiClient.getUsageDataBetweenDates
-					(dateFormat.parse(startDate), dateFormat.parse(endDate), orgName).values().stream()
+					(startDate, endDate, orgName).values().stream()
 					.flatMap(usageList -> usageList.stream()).filter(usageRecord -> usageRecord.getOrgName().equals(orgName)).mapToLong(usage -> usage.getDisk()).average().getAsDouble();
 			  
 				final double amtForCPU = (format.parse(costVO.getCpu()).doubleValue()) * pctCpuUsed;
