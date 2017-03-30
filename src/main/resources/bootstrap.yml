@@ -17,5 +17,5 @@ spring:
 spring:
   cloud:
     config:
-      uri: ${vcap.services.config-server.credentials.uri:http://localhost:8080}      
+      uri: ${vcap.services.config-cb.credentials.uri:http://localhost:8081}      
       
